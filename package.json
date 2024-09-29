@@ -1,0 +1,18 @@
+{
+  "name": "kl-camera-frontend",
+  "version": "1.0.0",
+  "description": "前端相机订阅",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "author": "",
+  "homepage": "https://github.com/fengqing1101/kl-camera-frontend",
+  "license": "ISC",
+  "devDependencies": {
+    "typescript": "^5.5.3"
+  },
+  "files": ["dist"]
+}
