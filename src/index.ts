@@ -1,39 +1,22 @@
-const globalConfig = {
-  async grabStart(camera: Camera) {
-    console.log(`${camera.desc}: ${camera.grabType} grabStart...`);
-    return true;
-  },
-  async grabStop(camera: Camera) {
-    console.log(`${camera.desc}: grabStop...`);
-    return false;
-  },
-  async setExposureTime(camera: Camera, expTime: number) {
-    console.log(`${camera.desc}: setExposureTime=${expTime}`);
-  },
-  async getExposureTime(camera: Camera): Promise<number> {
-    console.log(`${camera.desc}: getExposureTime`);
-    return 1000;
-  },
-  async undistort(camera: Camera, undistortParam: number[] | null) {
-    console.log(`${camera.desc}: undistort=${undistortParam}`);
-  },
-  async startSubscribe(subscribe: Subscribe, cb: (imageData: ImageData) => void) {
-    console.log(`${subscribe.camera.desc}/${subscribe.name}: startSubscribe...`);
-    cb(new ImageData(subscribe.width, subscribe.height));
-  },
-  async stopSubscribe(subscribe: Subscribe) {
-    console.log(`${subscribe.camera.desc}/${subscribe.name}: stopSubscribe...`);
-  },
-  async updateSubscribe(subscribe: Subscribe) {
-    console.log(`${subscribe.camera.desc}/${subscribe.name}: updateSubscribe...`);
-  },
-}
-
-export const setConfig = function (param: Partial<typeof globalConfig>) {
+export type GlobalConfig = {
+  grabStart(camera: Camera): Promise<boolean>;
+  grabStop(camera: Camera): Promise<boolean>;
+  setExposureTime(camera: Camera, expTime: number): Promise<void>;
+  getExposureTime(camera: Camera): Promise<number>;
+  undistort(camera: Camera, undistortParam: number[] | null): Promise<void>;
+  startSubscribe(subscribe: Subscribe, cb: (imageData: ImageData) => void): Promise<void>;
+  stopSubscribe(subscribe: Subscribe): Promise<void>;
+  updateSubscribe(subscribe: Subscribe): Promise<void>;
+  grabImage<T>(subscribe: Subscribe, path?: string): Promise<T | undefined>;
+};
+const globalConfig: Partial<GlobalConfig> = {};
+export const setConfig = function (param: Partial<GlobalConfig>) {
   Object.assign(globalConfig, param);
 }
 
+/** 订阅回调函数 */
 export type listener = (imageData: ImageData, sub: Subscribe) => void;
+
 export class Subscribe {
   /** 订阅的相机 */
   camera: Camera;
@@ -75,7 +58,7 @@ export class Subscribe {
   async startSubscribe(silent?: boolean): Promise<void> {
     if (this.isSubscribed) return;
     await this.camera.addSubscribe(this, silent);
-    await globalConfig.startSubscribe(this, this.subscribeCb);
+    await globalConfig.startSubscribe?.(this, this.subscribeCb);
     this.isSubscribed = true;
   }
 
@@ -90,7 +73,7 @@ export class Subscribe {
     this.width = width;
     this.height = height;
     if (!this.isSubscribed) return;
-    globalConfig.updateSubscribe(this);
+    globalConfig.updateSubscribe?.(this);
   }
 
   /**
@@ -99,16 +82,21 @@ export class Subscribe {
    */
   async stopSubscribe(silent?: boolean): Promise<void> {
     if (!this.isSubscribed) return;
-    await globalConfig.stopSubscribe(this);
+    await globalConfig.stopSubscribe?.(this);
     this.isSubscribed = false;
     await this.camera.removeSubscribe(this, silent);
   }
+
+  /**
+   * 采集图像
+   */
+  async grabImage<T>(path?: string): Promise<T | undefined> {
+    return globalConfig.grabImage?.<T>(this, path);
+  }
 }
 
-export const GrabTypes = [
-  { value: 'grabInternal', label: '内触发' },
-  { value: 'grabExternal', label: '外触发' },
-]
+/** 采集类型 */
+export type grabType = 'grabInternal' | 'grabExternal' | 'grabOnce';
 
 interface cameraParam {
   /** 相机id（唯一） */
@@ -147,7 +135,7 @@ export class Camera {
   /** 是否正在采集图像 */
   isGrabing: boolean = false;
   /** 触发方式；默认内触发 */
-  grabType: string = 'grabInternal';
+  grabType: grabType = 'grabInternal';
   constructor(param: cameraParam) {
     const { id, name, model, sn, width, height, channel } = param;
     this.id = id;
@@ -164,6 +152,13 @@ export class Camera {
    */
   get desc(): string {
     return `${this.name}(${this.sn})`;
+  }
+
+  /**
+   * 第一个正在订阅的Subscribe
+   */
+  get firstWorkSubscribe(): Subscribe | undefined {
+    return this.subscribes.find(e => e.isSubscribed);
   }
 
   /**
@@ -198,7 +193,7 @@ export class Camera {
    */
   async grabStart(): Promise<void> {
     if (this.isGrabing) return;
-    globalConfig.grabStart(this).then((isGrabing: boolean) => {
+    globalConfig.grabStart?.(this).then((isGrabing: boolean) => {
       this.isGrabing = isGrabing;
     }).catch((isGrabing: boolean) => {
       this.isGrabing = isGrabing;
@@ -210,7 +205,7 @@ export class Camera {
    */
   async grabStop(): Promise<void> {
     if (!this.isGrabing) return;
-    globalConfig.grabStop(this).then((isGrabing: boolean) => {
+    globalConfig.grabStop?.(this).then((isGrabing: boolean) => {
       this.isGrabing = isGrabing;
     }).catch((isGrabing: boolean) => {
       this.isGrabing = isGrabing;
@@ -220,7 +215,7 @@ export class Camera {
   /**
    * 切换采集模式
    */
-  async swicthGrabType(type: string) {
+  async swicthGrabType(type: grabType) {
     if (this.grabType === type) return;
     const isGrabing = this.isGrabing;
     if (isGrabing) await this.grabStop();
@@ -229,24 +224,32 @@ export class Camera {
   }
 
   /**
+   * 采集图像
+   */
+  async grabImage<T>(path?: string, subscribe?: Subscribe): Promise<T | undefined> {
+    subscribe = subscribe || this.firstWorkSubscribe;
+    return subscribe?.grabImage?.<T>(path);
+  }
+
+  /**
    * 设置曝光
    */
   async setExposureTime(expTime: number) {
-    return globalConfig.setExposureTime(this, expTime);
+    return globalConfig.setExposureTime?.(this, expTime);
   }
 
   /**
    * 获取曝光
    */
-  async getExposureTime(): Promise<number> {
-    return globalConfig.getExposureTime(this);
+  async getExposureTime(): Promise<number | undefined> {
+    return globalConfig.getExposureTime?.(this);
   }
 
   /**
    * 设置畸变参数
    */
   async undistort(undistortParam: number[] | null): Promise<void> {
-    return globalConfig.undistort(this, undistortParam);
+    return globalConfig.undistort?.(this, undistortParam);
   }
 
   /**
