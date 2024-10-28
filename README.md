@@ -26,6 +26,8 @@ setConfig({
   stopSubscribe?: (subscribe: Subscribe) => Promise<void>,
   // 更新订阅参数
   updateSubscribe?: (subscribe: Subscribe) => Promise<void>,
+  // 采集一帧图像
+  grabImage<T>(subscribe: Subscribe, path?: string): Promise<T | undefined>,
 });
 ```
 
@@ -74,8 +76,10 @@ new Camera(param: {
   subscribes: Subscribe[],
   // 是否正在采集图像
   isGrabing: boolean;
-  // 触发方式；grabInternal|grabExternal
+  // 触发方式；grabInternal|grabExternal|grabOnce
   grabType: string;
+  // 第一个正在订阅的Subscribe
+  firstWorkSubscribe: Subscribe | undefined;
 }
 ``` 
 
@@ -83,7 +87,10 @@ new Camera(param: {
 
 - 创建订阅对象
 ```typescript
-createSubscribe(listener: (imageData: ImageData, sub: Subscribe) => void) => Subscribe
+/**
+ * @param name 订阅名；默认为时间戳
+ */
+createSubscribe(listener: (imageData: ImageData, sub: Subscribe) => void, name?: string) => Subscribe
 ```
 
 - 开始采集
@@ -98,7 +105,19 @@ grabStop() => Promise<void>
 
 - 切换采集模式
 ```typescript
-swicthGrabType(type: 'grabInternal' | 'grabExternal') => void
+/**
+ * 若相机正在采集图像（且采集模式不一致），会先停止采集再切换
+ */
+swicthGrabType(type: 'grabInternal' | 'grabExternal' | 'grabOnce') => void
+```
+
+- 采集图像
+```typescript
+/**
+ * @param path 图像地址
+ * @param subscribe 非空时为第一个正在订阅的Subscribe
+ */
+grabImage<T>(path?: string, subscribe?: Subscribe) => Promise<T | undefined>
 ```
 
 - 设置曝光
@@ -175,7 +194,13 @@ stopSubscribe(silent?: boolean) => Promise<void>
  */
 updateParam(param: number[]) => void
 ```
-
+- 采集图像
+```typescript
+/**
+ * @param path 图像地址
+ */
+grabImage<T>(path?: string) => Promise<T | undefined>
+```
 
 ## 使用
 ```typescript

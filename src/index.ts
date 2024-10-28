@@ -1,12 +1,21 @@
 export type GlobalConfig = {
+  /** 开始采集 */
   grabStart(camera: Camera): Promise<boolean>;
+  /** 停止采集 */
   grabStop(camera: Camera): Promise<boolean>;
+  /** 设置曝光 */
   setExposureTime(camera: Camera, expTime: number): Promise<void>;
+  /** 获取曝光 */
   getExposureTime(camera: Camera): Promise<number>;
+  /** 设置畸变参数 */
   undistort(camera: Camera, undistortParam: number[] | null): Promise<void>;
+  /** 开始订阅 */
   startSubscribe(subscribe: Subscribe, cb: (imageData: ImageData) => void): Promise<void>;
+  /** 停止订阅 */
   stopSubscribe(subscribe: Subscribe): Promise<void>;
+  /** 更新订阅参数 */
   updateSubscribe(subscribe: Subscribe): Promise<void>;
+  /** 采集一帧图像 */
   grabImage<T>(subscribe: Subscribe, path?: string): Promise<T | undefined>;
 };
 const globalConfig: Partial<GlobalConfig> = {};
@@ -36,10 +45,10 @@ export class Subscribe {
   dy: number = 0;
   /** 是否已订阅 */
   isSubscribed: boolean = false;
-  constructor(camera: Camera, listener: listener) {
+  constructor(camera: Camera, listener: listener, name?: string) {
     this.camera = camera;
     this.listener = listener;
-    this.name = Date.now() + '';
+    this.name = name || (Date.now() + '');
     this.subscribeCb = this.subscribeCb.bind(this);
   }
 
@@ -164,8 +173,8 @@ export class Camera {
   /**
    * 创建订阅对象
    */
-  createSubscribe(listener: listener): Subscribe {
-    const subscribe = new Subscribe(this, listener);
+  createSubscribe(listener: listener, name?: string): Subscribe {
+    const subscribe = new Subscribe(this, listener, name);
     this.subscribes.push(subscribe);
     return subscribe;
   }
