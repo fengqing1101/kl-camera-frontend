@@ -1,6 +1,6 @@
 {
   "name": "kl-camera-frontend",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "前端相机订阅",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",

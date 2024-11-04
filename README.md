@@ -27,6 +27,8 @@ setConfig({
   stopSubscribe?: (subscribe: Subscribe) => Promise<void>,
   // 更新订阅参数
   updateSubscribe?: (subscribe: Subscribe) => Promise<void>,
+  // 销毁订阅
+  destorySubscribe?: (subscribe: Subscribe) => Promise<void>,
   // 采集一帧图像
   grabImage<T>(subscribe: Subscribe, path?: string): Promise<T | undefined>,
 });
@@ -194,6 +196,13 @@ stopSubscribe(silent?: boolean) => Promise<void>
  * @param param 订阅参数：[width, height, scale, dx, dy]
  */
 updateParam(param: number[]) => void
+```
+- 销毁订阅；若正在订阅则先停止订阅
+```typescript
+/**
+ * 组件卸载时若有资源需要释放可以调用此接口
+ */
+destorySubscribe() => Promise<void>
 ```
 - 采集图像
 ```typescript
