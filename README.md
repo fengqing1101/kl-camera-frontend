@@ -30,7 +30,7 @@ setConfig({
   // 销毁订阅
   destorySubscribe?: (subscribe: Subscribe) => Promise<void>,
   // 采集一帧图像
-  grabImage<T>(subscribe: Subscribe, path?: string): Promise<T | undefined>,
+  grabImage<T>(subscribe: Subscribe, save?: boolean): Promise<T | undefined>,
 });
 ```
 
@@ -117,10 +117,10 @@ swicthGrabType(type: 'grabInternal' | 'grabExternal' | 'grabOnce') => void
 - 采集图像
 ```typescript
 /**
- * @param path 图像地址
+ * @param save 是否存储
  * @param subscribe 非空时为第一个正在订阅的Subscribe
  */
-grabImage<T>(path?: string, subscribe?: Subscribe) => Promise<T | undefined>
+grabImage<T>(save?: boolean, subscribe?: Subscribe) => Promise<T | undefined>
 ```
 
 - 设置曝光
@@ -207,9 +207,9 @@ destorySubscribe() => Promise<void>
 - 采集图像
 ```typescript
 /**
- * @param path 图像地址
+ * @param save 是否存储图像
  */
-grabImage<T>(path?: string) => Promise<T | undefined>
+grabImage<T>(save?: boolean) => Promise<T | undefined>
 ```
 
 ## 使用

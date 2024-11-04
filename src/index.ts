@@ -18,7 +18,7 @@ export type GlobalConfig = {
   /** 销毁订阅 */
   destorySubscribe(subscribe: Subscribe): Promise<void>;
   /** 采集一帧图像 */
-  grabImage<T>(subscribe: Subscribe, path?: string): Promise<T | undefined>;
+  grabImage<T>(subscribe: Subscribe, save?: boolean): Promise<T | undefined>;
 };
 const globalConfig: Partial<GlobalConfig> = {};
 export const setConfig = function (param: Partial<GlobalConfig>) {
@@ -111,8 +111,8 @@ export class Subscribe {
   /**
    * 采集图像
    */
-  async grabImage<T>(path?: string): Promise<T | undefined> {
-    return globalConfig.grabImage?.<T>(this, path);
+  async grabImage<T>(save?: boolean): Promise<T | undefined> {
+    return globalConfig.grabImage?.<T>(this, save);
   }
 }
 
@@ -247,9 +247,9 @@ export class Camera {
   /**
    * 采集图像
    */
-  async grabImage<T>(path?: string, subscribe?: Subscribe): Promise<T | undefined> {
+  async grabImage<T>(save?: boolean, subscribe?: Subscribe): Promise<T | undefined> {
     subscribe = subscribe || this.firstWorkSubscribe;
-    return subscribe?.grabImage?.<T>(path);
+    return subscribe?.grabImage?.<T>(save);
   }
 
   /**
